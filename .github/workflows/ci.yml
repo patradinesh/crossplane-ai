@@ -53,9 +53,9 @@ jobs:
         go-version: '1.21'
     
     - name: golangci-lint
-      uses: golangci/golangci-lint-action@v3
+      uses: golangci/golangci-lint-action@v4
       with:
-        version: v1.60.3
+        version: latest
         args: --no-config --timeout=10m --enable=errcheck,govet,ineffassign,staticcheck,unused --max-issues-per-linter=0 --max-same-issues=0
 
   build:
