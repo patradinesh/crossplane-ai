@@ -55,7 +55,8 @@ jobs:
     - name: golangci-lint
       uses: golangci/golangci-lint-action@v3
       with:
-        version: latest
+        version: v1.60.3
+        args: --no-config --timeout=10m --enable=errcheck,govet,ineffassign,staticcheck,unused --max-issues-per-linter=0 --max-same-issues=0
 
   build:
     runs-on: ubuntu-latest
@@ -96,7 +97,7 @@ jobs:
     - name: Run Gosec Security Scanner
       run: |
         go install github.com/securego/gosec/v2/cmd/gosec@v2.18.2
-        ~/go/bin/gosec -fmt json -out gosec-report.json -quiet ./... || true
+        gosec -fmt json -out gosec-report.json -quiet ./... || true
     
     - name: Check Go modules for known vulnerabilities
       run: |
