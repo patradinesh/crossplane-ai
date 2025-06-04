@@ -1,21 +1,21 @@
-# Build stage
-FROM golang:1.22-alpine AS builder
+# Build stage - use Debian-based Go image for reliability
+FROM golang:1.22-bullseye AS builder
 
 WORKDIR /app
 
-# Install necessary packages without update (which can fail)
-RUN apk add --no-cache git ca-certificates tzdata
+# Install ca-certificates (more reliable than Alpine)
+RUN apt-get update && apt-get install -y ca-certificates git && rm -rf /var/lib/apt/lists/*
 
 # Copy go mod files first for better caching
 COPY go.mod go.sum ./
 
-# Download dependencies with verification
+# Download dependencies
 RUN go mod download && go mod verify
 
 # Copy source code
 COPY . .
 
-# Build the binary with optimizations
+# Build the binary
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -a -installsuffix cgo \
     -ldflags='-w -s -extldflags "-static"' \
