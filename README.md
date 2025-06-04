@@ -2,7 +2,7 @@
 
 An AI-powered command-line tool that brings intelligent capabilities to Crossplane resource management. Similar to kubectl-ai, but specifically designed for Crossplane infrastructure as code workflows.
 
-![Crossplane AI Demo](https://img.shields.io/badge/status-ready-green) ![Go Version](https://img.shields.io/badge/go-1.24+-blue) ![License](https://img.shields.io/badge/license-MIT-blue)
+![Crossplane AI Demo](https://img.shields.io/badge/status-ready-green) ![Go Version](https://img.shields.io/badge/go-1.22+-blue) ![License](https://img.shields.io/badge/license-MIT-blue)
 
 ## 🚀 Features
 
@@ -610,7 +610,7 @@ crossplane-ai/
 
 ### Prerequisites
 
-- Go 1.24+
+- Go 1.22+
 - Access to Kubernetes cluster with Crossplane
 - Make (optional)
 

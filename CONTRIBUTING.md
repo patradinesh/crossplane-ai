@@ -37,7 +37,7 @@ Enhancement suggestions are welcome! Please provide:
 
 ### Prerequisites
 
-- Go 1.24 or higher
+- Go 1.22 or higher
 - Access to a Kubernetes cluster with Crossplane (for testing)
 - Make (optional, for convenient commands)
 
