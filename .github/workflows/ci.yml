@@ -124,13 +124,6 @@ jobs:
         curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
         syft version
     
-    - name: Install Cosign
-      run: |
-        curl -Lo cosign https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64
-        chmod +x cosign
-        sudo mv cosign /usr/local/bin/
-        cosign version
-    
     - name: Run GoReleaser
       uses: goreleaser/goreleaser-action@v5
       with:

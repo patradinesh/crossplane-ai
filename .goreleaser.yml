@@ -142,16 +142,17 @@ docker_manifests:
 sboms:
   - artifacts: archive
 
-signs:
-  - cmd: cosign
-    env:
-    - COSIGN_EXPERIMENTAL=1
-    certificate: '${artifact}.pem'
-    signature: '${artifact}.sig'
-    args:
-      - sign-blob
-      - '--output-certificate=${certificate}'
-      - '--output-signature=${signature}'
-      - '${artifact}'
-      - "--yes"
-    artifacts: checksum
+# Signing disabled for CI environment
+# signs:
+#   - cmd: cosign
+#     env:
+#     - COSIGN_EXPERIMENTAL=1
+#     certificate: '${artifact}.pem'
+#     signature: '${artifact}.sig'
+#     args:
+#       - sign-blob
+#       - '--output-certificate=${certificate}'
+#       - '--output-signature=${signature}'
+#       - '${artifact}'
+#       - "--yes"
+#     artifacts: checksum
