@@ -1,5 +1,5 @@
 # Build stage - use Debian-based Go image for reliability
-FROM golang:1.22-bullseye AS builder
+FROM golang:1.23-bullseye AS builder
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y ca-certificates git && rm -rf /var/lib/
 COPY go.mod go.sum ./
 
 # Download dependencies
-RUN go mod download && go mod verify
+RUN go mod download
 
 # Copy source code
 COPY . .
