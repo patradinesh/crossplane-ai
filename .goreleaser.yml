@@ -1,0 +1,157 @@
+# GoReleaser configuration for Crossplane AI
+before:
+  hooks:
+    - go mod tidy
+    - go generate ./...
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    binary: crossplane-ai
+    main: ./main.go
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+
+archives:
+  - format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+    - goos: windows
+      format: zip
+    files:
+      - README.md
+      - LICENSE
+      - config.yaml
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - '^chore:'
+      - Merge pull request
+      - Merge branch
+  groups:
+    - title: 'New Features'
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: 'Bug fixes'
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: 'Performance improvements'
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: Other
+      order: 999
+
+release:
+  github:
+    owner: patradinesh
+    name: crossplane-ai
+  draft: false
+  prerelease: auto
+  name_template: "{{.ProjectName}}-v{{.Version}}"
+  header: |
+    ## What's Changed in {{ .Tag }}
+    
+    We're excited to bring you this new release of Crossplane AI! 🚀
+  footer: |
+    ## Installation
+    
+    ### Download Binary
+    Download the appropriate binary for your platform from the assets below.
+    
+    ### Using Go Install
+    ```bash
+    go install github.com/patradinesh/crossplane-ai@{{ .Tag }}
+    ```
+    
+    ### Using Docker
+    ```bash
+    docker run --rm ghcr.io/patradinesh/crossplane-ai:{{ .Tag }} --help
+    ```
+
+brews:
+  - name: crossplane-ai
+    tap:
+      owner: patradinesh
+      name: homebrew-tap
+    homepage: https://github.com/patradinesh/crossplane-ai
+    description: "AI-powered command-line tool for Crossplane resource management"
+    license: Apache-2.0
+    install: |
+      bin.install "crossplane-ai"
+    test: |
+      system "#{bin}/crossplane-ai --help"
+
+dockers:
+  - image_templates:
+    - "ghcr.io/patradinesh/crossplane-ai:{{ .Tag }}-amd64"
+    - "ghcr.io/patradinesh/crossplane-ai:latest-amd64"
+    use: buildx
+    dockerfile: Dockerfile
+    build_flag_templates:
+    - "--platform=linux/amd64"
+    - "--label=org.opencontainers.image.created={{.Date}}"
+    - "--label=org.opencontainers.image.title={{.ProjectName}}"
+    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.version={{.Version}}"
+  - image_templates:
+    - "ghcr.io/patradinesh/crossplane-ai:{{ .Tag }}-arm64"
+    - "ghcr.io/patradinesh/crossplane-ai:latest-arm64"
+    use: buildx
+    dockerfile: Dockerfile
+    build_flag_templates:
+    - "--platform=linux/arm64"
+    - "--label=org.opencontainers.image.created={{.Date}}"
+    - "--label=org.opencontainers.image.title={{.ProjectName}}"
+    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.version={{.Version}}"
+
+docker_manifests:
+  - name_template: "ghcr.io/patradinesh/crossplane-ai:{{ .Tag }}"
+    image_templates:
+    - "ghcr.io/patradinesh/crossplane-ai:{{ .Tag }}-amd64"
+    - "ghcr.io/patradinesh/crossplane-ai:{{ .Tag }}-arm64"
+  - name_template: "ghcr.io/patradinesh/crossplane-ai:latest"
+    image_templates:
+    - "ghcr.io/patradinesh/crossplane-ai:latest-amd64"
+    - "ghcr.io/patradinesh/crossplane-ai:latest-arm64"
+
+sboms:
+  - artifacts: archive
+
+signs:
+  - cmd: cosign
+    env:
+    - COSIGN_EXPERIMENTAL=1
+    certificate: '${artifact}.pem'
+    signature: '${artifact}.sig'
+    args:
+      - sign-blob
+      - '--output-certificate=${certificate}'
+      - '--output-signature=${signature}'
+      - '${artifact}'
+      - "--yes"
+    artifacts: checksum

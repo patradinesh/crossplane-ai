@@ -1,0 +1,63 @@
+# Crossplane AI Configuration
+
+# AI Service Configuration
+ai:
+  # Provider for AI services (openai, google, azure, local)
+  provider: "mock"
+  
+  # API Configuration (when using real AI services)
+  # api_key: "${OPENAI_API_KEY}"
+  # model: "gpt-4"
+  # base_url: ""
+
+# Kubernetes Configuration  
+kubernetes:
+  # Path to kubeconfig file (defaults to ~/.kube/config)
+  kubeconfig: ""
+  
+  # Kubernetes context to use
+  context: ""
+  
+  # Namespace to focus on (optional)
+  namespace: ""
+
+# Crossplane Configuration
+crossplane:
+  # Default providers to monitor
+  providers:
+    - aws
+    - gcp
+    - azure
+    - kubernetes
+  
+  # Resource types to analyze
+  resource_types:
+    - compositions
+    - providers
+    - configurations
+    - dbinstances
+    - instances
+    - buckets
+    - clusters
+
+# CLI Configuration
+cli:
+  # Output format (table, json, yaml)
+  output_format: "table"
+  
+  # Enable verbose logging
+  verbose: false
+  
+  # Enable colored output
+  color: true
+
+# Analysis Configuration
+analysis:
+  # Health check timeout (in seconds)
+  timeout: 30
+  
+  # Maximum number of suggestions to show
+  max_suggestions: 10
+  
+  # Enable detailed analysis
+  detailed: true

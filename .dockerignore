@@ -1,0 +1,76 @@
+# Build artifacts
+crossplane-ai
+*.exe
+*.dll
+*.so
+*.dylib
+dist/
+
+# Test files
+*.test
+*.out
+coverage.out
+
+# Go workspace
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation (except essential files)
+docs/
+*.md
+!README.md
+
+# CI/CD
+.github/
+.goreleaser.yml
+
+# Development
+tmp/
+temp/
+.env
+.env.local
+
+# IDE
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Dependency directories
+node_modules/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
