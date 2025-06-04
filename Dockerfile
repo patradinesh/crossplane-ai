@@ -1,10 +1,10 @@
 # Build stage
-FROM golang:1.24-alpine AS builder
+FROM golang:1.24-alpine3.19 AS builder
 
 WORKDIR /app
 
-# Install git and ca-certificates (needed for go mod download)
-RUN apk add --no-cache git ca-certificates
+# Update package index and install git and ca-certificates (needed for go mod download)
+RUN apk update && apk add --no-cache git ca-certificates
 
 # Copy go mod files
 COPY go.mod go.sum ./
@@ -19,10 +19,10 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o crossplane-ai .
 
 # Final stage
-FROM alpine:latest
+FROM alpine:3.19
 
-# Install ca-certificates for HTTPS requests
-RUN apk --no-cache add ca-certificates
+# Update package index and install ca-certificates for HTTPS requests
+RUN apk update && apk --no-cache add ca-certificates
 
 WORKDIR /root/
 
