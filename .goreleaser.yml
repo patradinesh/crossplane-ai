@@ -111,23 +111,43 @@ dockers:
     - "ghcr.io/patradinesh/crossplane-ai:latest-amd64"
     use: buildx
     dockerfile: Dockerfile
+    goos: linux
+    goarch: amd64
     build_flag_templates:
     - "--platform=linux/amd64"
     - "--label=org.opencontainers.image.created={{.Date}}"
     - "--label=org.opencontainers.image.title={{.ProjectName}}"
     - "--label=org.opencontainers.image.revision={{.FullCommit}}"
     - "--label=org.opencontainers.image.version={{.Version}}"
+    extra_files:
+    - go.mod
+    - go.sum
+    - cmd/
+    - pkg/
+    - internal/
+    - main.go
+    - config.yaml
   - image_templates:
     - "ghcr.io/patradinesh/crossplane-ai:{{ .Tag }}-arm64"
     - "ghcr.io/patradinesh/crossplane-ai:latest-arm64"
     use: buildx
     dockerfile: Dockerfile
+    goos: linux
+    goarch: arm64
     build_flag_templates:
     - "--platform=linux/arm64"
     - "--label=org.opencontainers.image.created={{.Date}}"
     - "--label=org.opencontainers.image.title={{.ProjectName}}"
     - "--label=org.opencontainers.image.revision={{.FullCommit}}"
     - "--label=org.opencontainers.image.version={{.Version}}"
+    extra_files:
+    - go.mod
+    - go.sum
+    - cmd/
+    - pkg/
+    - internal/
+    - main.go
+    - config.yaml
 
 docker_manifests:
   - name_template: "ghcr.io/patradinesh/crossplane-ai:{{ .Tag }}"
