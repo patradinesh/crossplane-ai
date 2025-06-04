@@ -161,7 +161,10 @@ func generateDatabaseManifest(description, provider string) string {
 		dbType = "postgres"
 	}
 
-	return fmt.Sprintf(`apiVersion: rds.aws.crossplane.io/v1alpha1
+	// Use provider in the API version to support different providers
+	apiVersion := fmt.Sprintf("rds.%s.crossplane.io/v1alpha1", provider)
+
+	return fmt.Sprintf(`apiVersion: %s
 kind: DBInstance
 metadata:
   name: my-database
@@ -192,7 +195,7 @@ metadata:
   name: my-database-connection
   namespace: default
 type: Opaque
-data: {}`, dbType)
+data: {}`, apiVersion, dbType)
 }
 
 func generateStorageManifest(description, provider string) string {
@@ -205,7 +208,10 @@ func generateStorageManifest(description, provider string) string {
 		versioning = "true"
 	}
 
-	return fmt.Sprintf(`apiVersion: s3.aws.crossplane.io/v1beta1
+	// Use provider in the API version
+	apiVersion := fmt.Sprintf("s3.%s.crossplane.io/v1beta1", provider)
+
+	return fmt.Sprintf(`apiVersion: %s
 kind: Bucket
 metadata:
   name: my-app-bucket
@@ -225,7 +231,7 @@ spec:
       ignorePublicAcls: true
       restrictPublicBuckets: true
   providerConfigRef:
-    name: default`, versioning)
+    name: default`, apiVersion, versioning)
 }
 
 func generateNetworkManifest(description, provider string) string {
@@ -233,7 +239,10 @@ func generateNetworkManifest(description, provider string) string {
 		provider = "aws"
 	}
 
-	return `apiVersion: ec2.aws.crossplane.io/v1beta1
+	// Use provider in the API version
+	apiVersion := fmt.Sprintf("ec2.%s.crossplane.io/v1beta1", provider)
+
+	return fmt.Sprintf(`apiVersion: %s
 kind: VPC
 metadata:
   name: my-vpc
@@ -247,7 +256,7 @@ spec:
   providerConfigRef:
     name: default
 ---
-apiVersion: ec2.aws.crossplane.io/v1beta1
+apiVersion: %s
 kind: Subnet
 metadata:
   name: my-subnet-public
@@ -264,7 +273,7 @@ spec:
     tags:
       Name: MyPublicSubnet
   providerConfigRef:
-    name: default`
+    name: default`, apiVersion, apiVersion)
 }
 
 func generateComputeManifest(description, provider string) string {
@@ -272,7 +281,10 @@ func generateComputeManifest(description, provider string) string {
 		provider = "aws"
 	}
 
-	return `apiVersion: ec2.aws.crossplane.io/v1alpha1
+	// Use provider in the API version
+	apiVersion := fmt.Sprintf("ec2.%s.crossplane.io/v1alpha1", provider)
+
+	return fmt.Sprintf(`apiVersion: %s
 kind: Instance
 metadata:
   name: my-instance
@@ -292,7 +304,7 @@ spec:
     tags:
       Name: MyInstance
   providerConfigRef:
-    name: default`
+    name: default`, apiVersion)
 }
 
 func generateWebAppManifest(description, provider string) string {
@@ -300,8 +312,12 @@ func generateWebAppManifest(description, provider string) string {
 		provider = "aws"
 	}
 
-	return `# Load Balancer
-apiVersion: elbv2.aws.crossplane.io/v1alpha1
+	// Use provider in the API versions
+	elbVersion := fmt.Sprintf("elbv2.%s.crossplane.io/v1alpha1", provider)
+	rdsVersion := fmt.Sprintf("rds.%s.crossplane.io/v1alpha1", provider)
+
+	return fmt.Sprintf(`# Load Balancer
+apiVersion: %s
 kind: LoadBalancer
 metadata:
   name: my-web-lb
@@ -320,7 +336,7 @@ spec:
     name: default
 ---
 # Database
-apiVersion: rds.aws.crossplane.io/v1alpha1
+apiVersion: %s
 kind: DBInstance
 metadata:
   name: my-web-db
@@ -339,7 +355,7 @@ spec:
     name: my-web-db-connection
     namespace: default
   providerConfigRef:
-    name: default`
+    name: default`, elbVersion, rdsVersion)
 }
 
 func generateDefaultManifest(description, provider string) string {

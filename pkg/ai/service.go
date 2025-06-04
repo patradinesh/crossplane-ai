@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-
-	"crossplane-ai/pkg/crossplane"
 )
 
 // Service represents the AI service
@@ -249,84 +247,4 @@ func (s *Service) performMockAnalysis(resources interface{}, healthCheck bool) *
 			},
 		},
 	}
-}
-
-// Helper methods for enhanced query processing
-
-func (s *Service) formatResourceCount(resources []crossplane.Resource) string {
-	count := len(resources)
-	if count == 0 {
-		return "🔍 No Crossplane resources found in your cluster."
-	}
-
-	providerCounts := make(map[string]int)
-	for _, r := range resources {
-		providerCounts[r.Provider]++
-	}
-
-	result := fmt.Sprintf("📊 You have %d Crossplane resources:\n", count)
-	for provider, count := range providerCounts {
-		result += fmt.Sprintf("  • %s: %d resources\n", strings.ToUpper(provider), count)
-	}
-	return result
-}
-
-func (s *Service) formatResourcesByType(resources []crossplane.Resource, resourceType string) string {
-	var filtered []crossplane.Resource
-
-	for _, r := range resources {
-		if strings.Contains(strings.ToLower(r.Type), resourceType) ||
-			strings.Contains(strings.ToLower(r.Name), resourceType) {
-			filtered = append(filtered, r)
-		}
-	}
-
-	if len(filtered) == 0 {
-		return fmt.Sprintf("🔍 No %s resources found in your cluster.", resourceType)
-	}
-
-	result := fmt.Sprintf("🔍 Found %d %s resources:\n", len(filtered), resourceType)
-	for _, r := range filtered {
-		statusIcon := "✅"
-		if strings.ToLower(r.Status) != "ready" {
-			statusIcon = "⚠️"
-		}
-		result += fmt.Sprintf("  %s %s (%s) - %s\n", statusIcon, r.Name, r.Provider, r.Status)
-	}
-	return result
-}
-
-func (s *Service) formatCostOptimization(resources []crossplane.Resource) string {
-	result := "💰 Cost Optimization Recommendations:\n\n"
-	result += "Based on your current resources, here are cost-saving opportunities:\n\n"
-	result += "🔹 Right-sizing opportunities:\n"
-	result += "  • Review instance sizes for over-provisioned resources\n"
-	result += "  • Consider downsizing development/staging environments\n\n"
-	result += "🔹 Reserved instances:\n"
-	result += "  • Evaluate reserved instance options for predictable workloads\n"
-	result += "  • Can save up to 70% on compute costs\n\n"
-	result += "🔹 Auto-scaling:\n"
-	result += "  • Implement auto-scaling to match demand\n"
-	result += "  • Automatically scale down during off-peak hours\n\n"
-	result += "Use 'crossplane-ai suggest optimize' for detailed recommendations."
-	return result
-}
-
-func (s *Service) formatSecurityAnalysis(resources []crossplane.Resource) string {
-	result := "🔒 Security Analysis:\n\n"
-	result += "Security recommendations for your Crossplane resources:\n\n"
-	result += "🔹 Encryption:\n"
-	result += "  • Ensure all databases have encryption at rest enabled\n"
-	result += "  • Use TLS/SSL for data in transit\n\n"
-	result += "🔹 Access Control:\n"
-	result += "  • Review IAM policies and roles\n"
-	result += "  • Implement principle of least privilege\n\n"
-	result += "🔹 Network Security:\n"
-	result += "  • Configure security groups and NACLs properly\n"
-	result += "  • Enable VPC flow logs for monitoring\n\n"
-	result += "🔹 Monitoring:\n"
-	result += "  • Enable CloudTrail/audit logging\n"
-	result += "  • Set up security alerts and monitoring\n\n"
-	result += "Use 'crossplane-ai suggest security' for detailed security recommendations."
-	return result
 }

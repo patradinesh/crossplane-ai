@@ -112,13 +112,13 @@ func printDetailedAnalysis(analysis *ai.Analysis) {
 	fmt.Println("==================")
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "NAME\tTYPE\tSTATUS\tPROVIDER\tAGE")
+	_, _ = fmt.Fprintln(w, "NAME\tTYPE\tSTATUS\tPROVIDER\tAGE")
 
 	for _, resource := range analysis.Resources {
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
 			resource.Name, resource.Type, resource.Status, resource.Provider, resource.Age)
 	}
-	w.Flush()
+	_ = w.Flush()
 	fmt.Println()
 
 	// Issues

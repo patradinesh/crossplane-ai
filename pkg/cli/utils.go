@@ -47,14 +47,14 @@ func CreateTable() *tabwriter.Writer {
 // PrintTable prints data in table format
 func PrintTable(headers []string, rows [][]string) {
 	w := CreateTable()
-	defer w.Flush()
+	defer func() { _ = w.Flush() }()
 
 	// Print headers
-	fmt.Fprintln(w, strings.Join(headers, "\t"))
+	_, _ = fmt.Fprintln(w, strings.Join(headers, "\t"))
 
 	// Print rows
 	for _, row := range rows {
-		fmt.Fprintln(w, strings.Join(row, "\t"))
+		_, _ = fmt.Fprintln(w, strings.Join(row, "\t"))
 	}
 }
 
@@ -80,7 +80,7 @@ func FormatStatus(status string) string {
 func PromptUser(prompt string) string {
 	fmt.Print(prompt)
 	var input string
-	fmt.Scanln(&input)
+	_, _ = fmt.Scanln(&input)
 	return strings.TrimSpace(input)
 }
 
