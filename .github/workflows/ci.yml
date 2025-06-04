@@ -22,7 +22,7 @@ jobs:
         go-version: ${{ matrix.go-version }}
     
     - name: Cache Go modules
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/go/pkg/mod
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
@@ -36,11 +36,12 @@ jobs:
       run: go test -v -race -coverprofile=coverage.out ./...
     
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: ./coverage.out
         flags: unittests
         name: codecov-umbrella
+        token: ${{ secrets.CODECOV_TOKEN }}
 
   lint:
     runs-on: ubuntu-latest
@@ -79,7 +80,7 @@ jobs:
       run: ./crossplane-ai --help
     
     - name: Upload binary artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: crossplane-ai-${{ github.sha }}
         path: crossplane-ai
