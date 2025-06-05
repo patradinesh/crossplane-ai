@@ -1,5 +1,5 @@
 # Build stage - use Debian-based Go image for reliability
-FROM golang:1.24-bullseye AS builder
+FROM golang:1.24-bookworm AS builder
 
 WORKDIR /app
 
