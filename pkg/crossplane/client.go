@@ -37,21 +37,48 @@ type Resource struct {
 	Raw       *unstructured.Unstructured `json:"-"`
 }
 
+// ClientOptions contains options for creating a new client
+type ClientOptions struct {
+	Context    string
+	Kubeconfig string
+}
+
 // NewClient creates a new Crossplane client
 func NewClient(ctx context.Context) (*Client, error) {
+	return NewClientWithOptions(ctx, ClientOptions{})
+}
+
+// NewClientWithOptions creates a new Crossplane client with options
+func NewClientWithOptions(ctx context.Context, opts ClientOptions) (*Client, error) {
 	// Try to get kubeconfig from various sources
-	var kubeconfig string
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfig = filepath.Join(home, ".kube", "config")
+	kubeconfig := opts.Kubeconfig
+	if kubeconfig == "" {
+		if home := homedir.HomeDir(); home != "" {
+			kubeconfig = filepath.Join(home, ".kube", "config")
+		}
 	}
 
-	// Build config from kubeconfig
+	// Build config from kubeconfig with optional context override
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
 		// Try in-cluster config
 		config, err = rest.InClusterConfig()
 		if err != nil {
 			return nil, fmt.Errorf("failed to build kubeconfig: %w", err)
+		}
+	}
+
+	// If context is specified, override the current context
+	if opts.Context != "" {
+		configLoader := clientcmd.NewDefaultClientConfigLoadingRules()
+		configLoader.ExplicitPath = kubeconfig
+		configOverrides := &clientcmd.ConfigOverrides{
+			CurrentContext: opts.Context,
+		}
+		config, err = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+			configLoader, configOverrides).ClientConfig()
+		if err != nil {
+			return nil, fmt.Errorf("failed to build kubeconfig with context %s: %w", opts.Context, err)
 		}
 	}
 

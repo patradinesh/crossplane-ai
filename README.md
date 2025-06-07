@@ -32,17 +32,25 @@ go install github.com/your-org/crossplane-ai@latest
 
 ### Testing Without Crossplane
 
-You can test the CLI tool without a full Crossplane installation using the included mock testing framework:
+You can test the CLI tool without a full Crossplane installation using the built-in mock mode with embedded sample data:
 
 ```bash
-# Use the mock testing script
-./test/mock/run-mock.sh ask "what resources do I have?"
+# Use mock mode with embedded data (no external files required)
+crossplane-ai --mock ask "what resources do I have?"
+crossplane-ai --mock analyze
+crossplane-ai --mock suggest database
 
-# Or set environment variables directly
-export CROSSPLANE_AI_MODE=mock
-export CROSSPLANE_AI_MOCK_DATA_DIR="./examples"
-./crossplane-ai ask "what resources do I have?"
+# Generate example files for learning or custom testing
+crossplane-ai generate examples
+
+# Use custom mock data directory (optional)
+crossplane-ai --mock --mock-data-dir ./my-examples analyze
+
+# Use the mock testing script (for automated testing)
+./test/mock/run-mock.sh ask "what resources do I have?"
 ```
+
+**Perfect for downloaded binaries**: Mock mode uses embedded sample data, so you can test immediately after downloading the binary without any additional setup or files.
 
 See [TESTING.md](./TESTING.md) and the [mock testing README](./test/mock/README.md) for detailed testing instructions.
 
@@ -60,11 +68,14 @@ crossplane-ai suggest database
 # Analyze resource health
 crossplane-ai analyze
 
-# Generate new resources  
-crossplane-ai generate "create a MySQL database on AWS"
+# Generate example files for learning
+crossplane-ai generate examples
 
 # Interactive mode
 crossplane-ai interactive
+
+# Test with mock data (no Crossplane cluster required)
+crossplane-ai --mock ask "what resources do I have?"
 ```
 
 ## 🤖 Commands
@@ -96,7 +107,16 @@ crossplane-ai ask "how can I optimize costs?"
 Generate Crossplane manifests from natural language descriptions.
 
 ```bash
-# Database resources
+# Generate example files for learning
+crossplane-ai generate examples
+
+# List available example types
+crossplane-ai generate examples --list
+
+# Generate examples in specific directory
+crossplane-ai generate examples --output ./my-examples
+
+# Database resources (requires AI service)
 crossplane-ai generate "create a PostgreSQL database on AWS"
 crossplane-ai generate "MySQL cluster with read replicas"
 
@@ -179,6 +199,52 @@ In interactive mode, you can use commands like:
 - `suggest [type]` - Get suggestions
 - `help` - Show available commands
 - `exit` - Exit interactive mode
+
+## 🧪 Mock Mode - Testing Without Crossplane
+
+Mock mode allows you to test all functionality without a real Crossplane cluster. It uses embedded sample data that includes diverse multi-cloud resources.
+
+### Quick Start with Mock Mode
+
+```bash
+# Test any command with --mock flag
+crossplane-ai --mock ask "what databases do I have?"
+crossplane-ai --mock analyze 
+crossplane-ai --mock suggest optimization
+
+# Generate example files for learning
+crossplane-ai generate examples
+
+# Use custom mock data (optional)
+crossplane-ai --mock --mock-data-dir ./examples analyze
+```
+
+### Mock Mode Features
+
+- **Embedded Sample Data**: 11 diverse resources across AWS, GCP, and Azure
+- **No External Dependencies**: Works immediately after downloading the binary
+- **Realistic Scenarios**: Includes healthy and failing resources for testing
+- **All Commands Supported**: Every command works in mock mode
+- **Custom Data Support**: Optionally use your own mock data directory
+
+### Mock Data Includes
+
+- Crossplane providers (AWS, GCP, Azure)
+- Database instances and compositions
+- Storage resources (buckets, accounts)
+- Compute instances
+- Resource definitions and claims
+- Mixed health states for testing
+
+### Backward Compatibility
+
+Environment variables are still supported for existing scripts:
+
+```bash
+export CROSSPLANE_AI_MODE=mock
+export CROSSPLANE_AI_MOCK_DATA_DIR="./examples"  # optional
+crossplane-ai ask "what resources do I have?"
+```
 
 ## ⚙️ Configuration
 

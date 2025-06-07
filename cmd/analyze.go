@@ -31,8 +31,23 @@ performance insights, security recommendations, and troubleshooting suggestions.
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 
-		// Initialize clients
-		client, err := crossplane.NewClient(ctx)
+		// Check if running in mock mode
+		if IsMockMode() {
+			fmt.Println("🔬 Performing AI-powered analysis (MOCK MODE)...")
+			fmt.Println()
+			return performMockAnalysis(ctx, cmd, args)
+		}
+
+		// Initialize clients for real mode
+		contextFlag, _ := cmd.Flags().GetString("context")
+		kubeconfigFlag, _ := cmd.Flags().GetString("kubeconfig")
+
+		clientOpts := crossplane.ClientOptions{
+			Context:    contextFlag,
+			Kubeconfig: kubeconfigFlag,
+		}
+
+		client, err := crossplane.NewClientWithOptions(ctx, clientOpts)
 		if err != nil {
 			return fmt.Errorf("failed to initialize Crossplane client: %w", err)
 		}
@@ -67,7 +82,8 @@ func performAnalysis(ctx context.Context, client *crossplane.Client, aiService *
 	}
 
 	if len(resources) == 0 {
-		fmt.Println("No resources found matching the criteria.")
+		fmt.Println("No Crossplane resources found matching the criteria.")
+		fmt.Println("Please ensure Crossplane is installed and you have created some resources.")
 		return nil
 	}
 
@@ -159,6 +175,70 @@ func printDetailedAnalysis(analysis *ai.Analysis) {
 			fmt.Println("🚨 Critical issues detected. Please review recommendations.")
 		}
 	}
+}
+
+// performMockAnalysis performs analysis using mock data
+func performMockAnalysis(ctx context.Context, cmd *cobra.Command, args []string) error {
+	// Get flags for mock analysis
+	provider, _ := cmd.Flags().GetString("provider")
+	_, _ = cmd.Flags().GetString("namespace") // namespace not used in mock mode
+	healthCheck, _ := cmd.Flags().GetBool("health-check")
+	summary, _ := cmd.Flags().GetBool("summary")
+
+	var resourceName string
+	if len(args) > 0 {
+		resourceName = args[0]
+	}
+
+	// Use embedded mock data that works without external files
+	fmt.Println("📁 Using embedded mock data (no external files required)")
+	fmt.Println()
+
+	// Create mock AI service and analysis
+	aiService := ai.NewService()
+
+	// Get embedded mock resources
+	mockResources := ai.GetEmbeddedMockResources()
+
+	// Apply filters if specified
+	var filteredResources []*ai.ResourceInfo
+	for _, res := range mockResources {
+		if resourceName != "" && res.Name != resourceName {
+			continue
+		}
+		if provider != "" && res.Provider != provider {
+			continue
+		}
+		// Note: namespace filtering not applicable for these mock resources
+		filteredResources = append(filteredResources, res)
+	}
+
+	if len(filteredResources) == 0 {
+		fmt.Println("No mock Crossplane resources found matching the criteria.")
+		fmt.Println("Available mock resources:")
+		for _, res := range mockResources {
+			fmt.Printf("  - %s (%s, provider: %s)\n", res.Name, res.Type, res.Provider)
+		}
+		return nil
+	}
+
+	// Perform analysis with mock data
+	analysis, err := aiService.AnalyzeResources(ctx, filteredResources, healthCheck)
+	if err != nil {
+		return fmt.Errorf("mock analysis failed: %w", err)
+	}
+
+	if summary {
+		printSummary(analysis)
+	} else {
+		printDetailedAnalysis(analysis)
+	}
+
+	fmt.Println()
+	fmt.Println("🧪 This was a mock analysis using embedded sample data.")
+	fmt.Println("To analyze real resources, run without the --mock flag")
+
+	return nil
 }
 
 func init() {

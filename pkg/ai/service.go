@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"crossplane-ai/pkg/crossplane"
 )
 
 // Service represents the AI service
@@ -85,9 +87,172 @@ func (s *Service) GenerateSuggestions(ctx context.Context, suggestionType string
 
 // AnalyzeResources performs AI analysis of resources
 func (s *Service) AnalyzeResources(ctx context.Context, resources interface{}, healthCheck bool) (*Analysis, error) {
-	// Simulate AI analysis
-	analysis := s.performMockAnalysis(resources, healthCheck)
-	return analysis, nil
+	// Check if we have actual resources
+	var resourceList []*ResourceInfo
+
+	switch r := resources.(type) {
+	case []*ResourceInfo:
+		resourceList = r
+	case []*crossplane.Resource:
+		// Convert from crossplane.Resource to ResourceInfo
+		for _, res := range r {
+			resourceList = append(resourceList, &ResourceInfo{
+				Name:     res.Name,
+				Type:     res.Type,
+				Status:   res.Status,
+				Provider: res.Provider,
+				Age:      res.Age,
+			})
+		}
+	case []map[string]interface{}:
+		// Convert from generic map format
+		for _, res := range r {
+			resourceList = append(resourceList, convertMapToResourceInfo(res))
+		}
+	default:
+		// If we don't have proper resources, return empty analysis
+		return &Analysis{
+			TotalResources:   0,
+			HealthyResources: 0,
+			IssuesFound:      0,
+			HealthScore:      0,
+			Resources:        []ResourceInfo{},
+			Issues:           []Issue{},
+			Recommendations:  []Recommendation{},
+		}, nil
+	}
+
+	// If no resources found, return appropriate analysis
+	if len(resourceList) == 0 {
+		return &Analysis{
+			TotalResources:   0,
+			HealthyResources: 0,
+			IssuesFound:      0,
+			HealthScore:      0,
+			Resources:        []ResourceInfo{},
+			Issues:           []Issue{},
+			Recommendations: []Recommendation{{
+				Title:       "Install Crossplane Providers",
+				Description: "No Crossplane resources found. Install providers and create compositions to get started.",
+				Impact:      "Enable infrastructure management through Crossplane",
+				Priority:    "High",
+			}},
+		}, nil
+	}
+
+	// Perform real analysis on actual resources
+	return s.performRealAnalysis(resourceList, healthCheck), nil
+}
+
+// convertMapToResourceInfo converts a map to ResourceInfo
+func convertMapToResourceInfo(res map[string]interface{}) *ResourceInfo {
+	info := &ResourceInfo{}
+
+	if name, ok := res["name"].(string); ok {
+		info.Name = name
+	}
+	if resourceType, ok := res["type"].(string); ok {
+		info.Type = resourceType
+	}
+	if status, ok := res["status"].(string); ok {
+		info.Status = status
+	}
+	if provider, ok := res["provider"].(string); ok {
+		info.Provider = provider
+	}
+	if age, ok := res["age"].(string); ok {
+		info.Age = age
+	}
+
+	return info
+}
+
+// performRealAnalysis analyzes actual resources from the cluster
+func (s *Service) performRealAnalysis(resources []*ResourceInfo, healthCheck bool) *Analysis {
+	totalResources := len(resources)
+	healthyResources := 0
+	issues := []Issue{}
+
+	// Convert ResourceInfo pointers to values for the analysis
+	resourceList := make([]ResourceInfo, len(resources))
+	for i, res := range resources {
+		resourceList[i] = *res
+		// Count healthy resources
+		if res.Status == "Ready" {
+			healthyResources++
+		} else if res.Status != "Ready" && res.Status != "Unknown" {
+			// Add issue for non-ready resources
+			issues = append(issues, Issue{
+				Severity:    "Warning",
+				Description: fmt.Sprintf("Resource %s is in %s state", res.Name, res.Status),
+				Resource:    res.Name,
+				Resolution:  "Check resource events and provider status",
+			})
+		}
+	}
+
+	issuesFound := len(issues)
+
+	// Calculate health score
+	healthScore := 100
+	if totalResources > 0 {
+		healthScore = (healthyResources * 100) / totalResources
+	}
+
+	// Generate recommendations based on actual state
+	recommendations := s.generateRealRecommendations(resources, healthScore)
+
+	return &Analysis{
+		TotalResources:   totalResources,
+		HealthyResources: healthyResources,
+		IssuesFound:      issuesFound,
+		HealthScore:      healthScore,
+		Resources:        resourceList,
+		Issues:           issues,
+		Recommendations:  recommendations,
+	}
+}
+
+// generateRealRecommendations generates recommendations based on actual resource state
+func (s *Service) generateRealRecommendations(resources []*ResourceInfo, healthScore int) []Recommendation {
+	recommendations := []Recommendation{}
+
+	// Health-based recommendations
+	if healthScore < 80 {
+		recommendations = append(recommendations, Recommendation{
+			Title:       "Investigate Resource Issues",
+			Description: "Some resources are not in ready state. Check logs and events for troubleshooting.",
+			Impact:      "Improve system reliability and performance",
+			Priority:    "High",
+		})
+	}
+
+	// Provider-specific recommendations
+	providerCounts := make(map[string]int)
+	for _, res := range resources {
+		providerCounts[res.Provider]++
+	}
+
+	if len(providerCounts) > 2 {
+		recommendations = append(recommendations, Recommendation{
+			Title:       "Multi-Cloud Management",
+			Description: "Consider implementing consistent policies across multiple cloud providers.",
+			Impact:      "Better governance and cost optimization",
+			Priority:    "Medium",
+		})
+	}
+
+	// If we have resources, suggest monitoring
+	if len(resources) > 0 {
+		recommendations = append(recommendations, Recommendation{
+			Title:       "Enable Monitoring and Alerting",
+			Description: "Set up monitoring for your Crossplane resources to track health and performance.",
+			Impact:      "Proactive issue detection and resolution",
+			Priority:    "Medium",
+		})
+	}
+
+	return recommendations
 }
 
 // simulateAIResponse simulates an AI response to a natural language query
@@ -207,44 +372,5 @@ func (s *Service) generateMockSuggestions(suggestionType string) []*Suggestion {
 				Category:    "Maintenance",
 			},
 		}
-	}
-}
-
-func (s *Service) performMockAnalysis(resources interface{}, healthCheck bool) *Analysis {
-	// In a real implementation, this would analyze the actual resources
-	return &Analysis{
-		TotalResources:   5,
-		HealthyResources: 4,
-		IssuesFound:      1,
-		HealthScore:      80,
-		Resources: []ResourceInfo{
-			{Name: "my-database", Type: "dbinstance", Status: "Ready", Provider: "aws", Age: "2d"},
-			{Name: "web-server", Type: "instance", Status: "Ready", Provider: "aws", Age: "1d"},
-			{Name: "data-bucket", Type: "bucket", Status: "Ready", Provider: "aws", Age: "5d"},
-			{Name: "app-cluster", Type: "cluster", Status: "Not Ready", Provider: "gcp", Age: "1h"},
-			{Name: "backup-storage", Type: "account", Status: "Ready", Provider: "azure", Age: "3d"},
-		},
-		Issues: []Issue{
-			{
-				Severity:    "Warning",
-				Description: "GCP cluster is not ready - check network configuration",
-				Resource:    "app-cluster",
-				Resolution:  "Verify VPC settings and firewall rules",
-			},
-		},
-		Recommendations: []Recommendation{
-			{
-				Title:       "Enable monitoring",
-				Description: "Set up comprehensive monitoring for all resources",
-				Impact:      "Improved visibility and faster issue detection",
-				Priority:    "High",
-			},
-			{
-				Title:       "Implement backup strategy",
-				Description: "Create automated backup policies for critical data",
-				Impact:      "Enhanced data protection and disaster recovery",
-				Priority:    "High",
-			},
-		},
 	}
 }
