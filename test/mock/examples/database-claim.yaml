@@ -1,0 +1,8 @@
+apiVersion: example.org/v1alpha1
+kind: Database
+metadata:
+  name: sample-db
+spec:
+  storageGB: 20
+  engine: postgresql
+  version: "14.0"

@@ -11,6 +11,9 @@ import (
 type Service struct {
 	// In a real implementation, this would contain API clients for AI services
 	// like OpenAI, Google AI, or local models
+	provider      string
+	mockService   *MockAIService
+	openAIService *OpenAIService
 }
 
 // Suggestion represents an AI-generated suggestion

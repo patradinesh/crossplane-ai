@@ -1,0 +1,40 @@
+version: '3'
+
+services:
+  # Local registry for caching images
+  registry:
+    image: registry:2
+    ports:
+      - "5000:5000"
+    volumes:
+      - registry-data:/var/lib/registry
+    restart: unless-stopped
+
+  # Kind setup container 
+  kind-setup:
+    image: alpine:3.19
+    depends_on:
+      - registry
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${HOME}/.kube:/root/.kube
+      - ./:/workspace
+    working_dir: /workspace
+    command: >
+      sh -c "
+        echo 'Waiting for registry to be ready...' &&
+        sleep 5 &&
+        echo 'Setting up Kind with Crossplane...' &&
+        apk add --no-cache docker kubectl curl &&
+        curl -Lo /usr/local/bin/kind https://kind.sigs.k8s.io/dl/latest/kind-linux-amd64 &&
+        chmod +x /usr/local/bin/kind &&
+        kind create cluster --config kind-config.yaml --name crossplane-cluster &&
+        kubectl create namespace crossplane-system &&
+        curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | sh &&
+        helm repo add crossplane-stable https://charts.crossplane.io/stable &&
+        helm repo update &&
+        helm install crossplane --namespace crossplane-system crossplane-stable/crossplane --set args='{\"--registry=index.docker.io\"}' --wait
+      "
+
+volumes:
+  registry-data:

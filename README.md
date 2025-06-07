@@ -30,6 +30,22 @@ sudo mv crossplane-ai /usr/local/bin/
 go install github.com/your-org/crossplane-ai@latest
 ```
 
+### Testing Without Crossplane
+
+You can test the CLI tool without a full Crossplane installation using the included mock testing framework:
+
+```bash
+# Use the mock testing script
+./test/mock/run-mock.sh ask "what resources do I have?"
+
+# Or set environment variables directly
+export CROSSPLANE_AI_MODE=mock
+export CROSSPLANE_AI_MOCK_DATA_DIR="./examples"
+./crossplane-ai ask "what resources do I have?"
+```
+
+See [TESTING.md](./TESTING.md) and the [mock testing README](./test/mock/README.md) for detailed testing instructions.
+
 ## 🎯 Quick Start
 
 ### Basic Commands

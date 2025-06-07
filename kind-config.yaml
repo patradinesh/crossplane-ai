@@ -1,0 +1,27 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: crossplane-cluster
+containerdConfigPatches:
+- |-
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."xpkg.crossplane.io"]
+    endpoint = ["https://xpkg.crossplane.io"]
+  [plugins."io.containerd.grpc.v1.cri".registry.configs."xpkg.crossplane.io".tls]
+    insecure_skip_verify = true
+nodes:
+- role: control-plane
+  extraMounts:
+    - hostPath: ./host-cas.crt
+      containerPath: /usr/local/share/ca-certificates/host-cas.crt
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  extraPortMappings:
+  - containerPort: 80
+    hostPort: 80
+    protocol: TCP
+  - containerPort: 443
+    hostPort: 443
+    protocol: TCP
