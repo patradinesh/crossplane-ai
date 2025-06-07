@@ -3,7 +3,6 @@ package mock
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -107,7 +106,7 @@ func (s *AIService) AnalyzeResources(ctx context.Context, resources []map[string
 
 // loadResourceContent loads and summarizes the content of a YAML resource file
 func (s *AIService) loadResourceContent(filePath string) (string, error) {
-	content, err := ioutil.ReadFile(filePath)
+	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return "", err
 	}

@@ -3,7 +3,6 @@ package mock
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -75,7 +74,7 @@ func (c *CrossplaneClient) loadMockResources() {
 			filePath := filepath.Join(c.mockDataDir, file.Name())
 
 			// Read file content
-			content, err := ioutil.ReadFile(filePath)
+			content, err := os.ReadFile(filePath)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Warning: Failed to read file %s: %v\n", filePath, err)
 				continue
