@@ -3,12 +3,12 @@
 # AI Service Configuration
 ai:
   # Provider for AI services (openai, google, azure, local)
-  provider: "mock"
+  provider: "openai"
   
   # API Configuration (when using real AI services)
-  # api_key: "${OPENAI_API_KEY}"
-  # model: "gpt-4"
-  # base_url: ""
+  api_key: "${OPENAI_API_KEY}"
+  model: "gpt-4"
+  base_url: ""
 
 # Kubernetes Configuration  
 kubernetes:

@@ -58,6 +58,16 @@ The AI will analyze your cluster's Crossplane resources and provide helpful insi
 		// Initialize AI service
 		aiService := ai.NewService()
 
+		// Show AI mode information
+		if aiService.IsUsingRealAI() {
+			fmt.Println("🤖 AI Assistant (POWERED BY OPENAI)")
+		} else {
+			fmt.Println("🤖 AI Assistant (TEMPLATE MODE)")
+			fmt.Println("💡 Set OPENAI_API_KEY for real AI capabilities")
+		}
+		fmt.Println("===========================")
+		fmt.Println()
+
 		if question == "" {
 			// Interactive mode
 			return runInteractiveMode(ctx, client, aiService)

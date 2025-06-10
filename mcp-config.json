@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "crossplane-ai": {
+      "command": "/Users/dpatra/repos/dinesh/crossplane-ai/mcp-server",
+      "args": [],
+      "env": {}
+    }
+  }
+}

@@ -72,7 +72,13 @@ performance insights, security recommendations, and troubleshooting suggestions.
 func performAnalysis(ctx context.Context, client *crossplane.Client, aiService *ai.Service,
 	resourceName, provider, namespace string, healthCheck, summary bool) error {
 
-	fmt.Println("🔬 Performing AI-powered analysis...")
+	// Show AI mode information
+	if aiService.IsUsingRealAI() {
+		fmt.Println("🔬 Performing AI-powered analysis (OpenAI)...")
+	} else {
+		fmt.Println("🔬 Performing analysis (template-based)...")
+		fmt.Println("💡 Set OPENAI_API_KEY for AI-powered insights")
+	}
 	fmt.Println()
 
 	// Get resources based on filters

@@ -56,7 +56,14 @@ func runGenerate(description, provider, outputFormat string, dryRun, apply bool)
 
 	aiService := ai.NewService()
 
-	cli.PrintInfo(fmt.Sprintf("🤖 Generating Crossplane resources for: %s", description))
+	// Show AI mode information
+	if aiService.IsUsingRealAI() {
+		cli.PrintInfo("🤖 Using OpenAI for intelligent manifest generation")
+	} else {
+		cli.PrintInfo("🤖 Using template-based generation (set OPENAI_API_KEY for AI-powered generation)")
+	}
+
+	cli.PrintInfo(fmt.Sprintf("📝 Generating Crossplane resources for: %s", description))
 	fmt.Println()
 
 	// Generate the manifest
@@ -117,9 +124,18 @@ func runInteractiveGenerate() error {
 }
 
 func generateManifest(ctx context.Context, aiService *ai.Service, description, provider string) (string, error) {
-	// In a real implementation, this would use AI to generate actual Crossplane manifests
-	// For now, we'll generate example templates based on common patterns
+	// Use AI service for intelligent manifest generation
+	manifest, err := aiService.GenerateManifest(ctx, description, provider)
+	if err != nil {
+		return "", fmt.Errorf("AI manifest generation failed: %w", err)
+	}
 
+	// If we got a manifest from AI, return it
+	if manifest != "" {
+		return manifest, nil
+	}
+
+	// Fallback to template-based generation (this shouldn't happen with the new AI service)
 	descriptionLower := strings.ToLower(description)
 
 	// Database resources

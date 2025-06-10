@@ -13,6 +13,39 @@ An AI-powered command-line tool that brings intelligent capabilities to Crosspla
 - **Multi-Cloud Support**: Works with AWS, GCP, Azure, and other Crossplane providers
 - **Intelligent Suggestions**: Get AI-powered recommendations for optimization, security, and best practices
 
+## 🤖 AI Integration Modes
+
+Crossplane AI supports multiple operation modes for different use cases:
+
+### 🧠 AI Mode (Real Intelligence)
+- **Uses**: OpenAI GPT-4 for truly intelligent responses
+- **Setup**: Requires `OPENAI_API_KEY` environment variable
+- **Best for**: Production use, complex queries, intelligent analysis
+- **Status**: Shows "🤖 AI Assistant (POWERED BY OPENAI)"
+
+### 📝 Template Mode (Smart Fallback)  
+- **Uses**: Intelligent templates and contextual responses
+- **Setup**: No API key required
+- **Best for**: When AI isn't available, basic resource management
+- **Status**: Shows "🤖 AI Assistant (TEMPLATE MODE)"
+
+### 🧪 Mock Mode (Testing & Demos)
+- **Uses**: Embedded sample data, no external dependencies
+- **Setup**: Use `--mock` flag or download standalone binary
+- **Best for**: Testing, demos, learning Crossplane
+- **Status**: Shows "🤖 AI Assistant (MOCK MODE)"
+
+```bash
+# Real AI mode (requires API key)
+OPENAI_API_KEY=xxx crossplane-ai ask "What's wrong with my database?"
+
+# Template mode (no API key needed)  
+crossplane-ai ask "What resources do I have?"
+
+# Mock mode (embedded data, perfect for testing)
+crossplane-ai --mock ask "What resources do I have?"
+```
+
 ## 📦 Installation
 
 ### From Source
@@ -559,16 +592,32 @@ crossplane-ai chat --analyze       # With initial analysis
 
 ## Configuration
 
-### Configuration File
+### AI Integration Modes
 
+Crossplane AI supports three operation modes:
+
+1. **🤖 AI Mode (Real AI)**: Uses OpenAI for intelligent responses
+2. **📝 Template Mode**: Uses smart templates when AI is unavailable  
+3. **🧪 Mock Mode**: Uses embedded sample data for testing/demos
+
+### Setting Up Real AI Integration
+
+#### 1. Get OpenAI API Key
+```bash
+# Get your API key from https://platform.openai.com/account/api-keys
+export OPENAI_API_KEY=your-actual-api-key
+```
+
+#### 2. Configure for OpenAI
 Create `~/.crossplane-ai.yaml`:
 
 ```yaml
 # AI Service Configuration
 ai:
-  provider: "mock"  # or "openai", "google", "azure"
-  # api_key: "${OPENAI_API_KEY}"
-  # model: "gpt-4"
+  provider: "openai"              # Enable OpenAI integration
+  api_key: "${OPENAI_API_KEY}"    # Reference environment variable
+  model: "gpt-4"                  # Or "gpt-3.5-turbo" for faster/cheaper
+  base_url: ""                    # Optional: custom OpenAI endpoint
 
 # Kubernetes Configuration  
 kubernetes:
@@ -601,13 +650,32 @@ analysis:
   detailed: true
 ```
 
+#### 3. Test AI Integration
+```bash
+# Verify AI mode is active
+crossplane-ai ask "test"
+# Should show: 🤖 AI Assistant (POWERED BY OPENAI)
+
+# Without API key, falls back to template mode
+# Shows: 🤖 AI Assistant (TEMPLATE MODE)
+```
+
 ### Environment Variables
 
 ```bash
 export KUBECONFIG=/path/to/kubeconfig
 export CROSSPLANE_AI_VERBOSE=true
-export OPENAI_API_KEY=your-api-key  # For real AI integration
+export OPENAI_API_KEY=your-api-key     # Required for real AI integration
+export CROSSPLANE_AI_MODE=mock         # Force mock mode (optional)
 ```
+
+### Configuration Modes
+
+| Mode | Configuration | API Key Required | Use Case |
+|------|---------------|------------------|----------|
+| **AI Mode** | `provider: "openai"` + API key | ✅ Yes | Production use with intelligent responses |
+| **Template Mode** | `provider: "openai"` without API key | ❌ No | Fallback with smart templates |
+| **Mock Mode** | `--mock` flag or `provider: "mock"` | ❌ No | Testing, demos, learning |
 
 ### Global Flags
 

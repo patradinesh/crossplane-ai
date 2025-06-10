@@ -4,15 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
+	"crossplane-ai/internal/config"
 	"crossplane-ai/pkg/crossplane"
 )
 
 // Service represents the AI service
 type Service struct {
-	// In a real implementation, this would contain API clients for AI services
-	// like OpenAI, Google AI, or local models
+	openaiClient *OpenAIClient
+	config       *config.Config
+	useRealAI    bool
 }
 
 // Suggestion represents an AI-generated suggestion
@@ -62,7 +65,98 @@ type Recommendation struct {
 
 // NewService creates a new AI service
 func NewService() *Service {
-	return &Service{}
+	// Load configuration
+	cfg, err := config.Load()
+	if err != nil {
+		// Fallback to default configuration if loading fails
+		return &Service{
+			useRealAI: false,
+		}
+	}
+
+	// Check if we should use real AI
+	useRealAI := shouldUseRealAI(cfg)
+
+	var openaiClient *OpenAIClient
+	if useRealAI {
+		// Initialize OpenAI client with configuration
+		openaiConfig := OpenAIConfig{
+			APIKey:  getAPIKey(cfg),
+			Model:   cfg.AI.Model,
+			BaseURL: cfg.AI.BaseURL,
+		}
+		openaiClient = NewOpenAIClient(openaiConfig)
+	}
+
+	return &Service{
+		openaiClient: openaiClient,
+		config:       cfg,
+		useRealAI:    useRealAI,
+	}
+}
+
+// NewServiceWithConfig creates a new AI service with explicit configuration
+func NewServiceWithConfig(cfg *config.Config) *Service {
+	if cfg == nil {
+		return NewService()
+	}
+
+	// Check if we should use real AI
+	useRealAI := shouldUseRealAI(cfg)
+
+	var openaiClient *OpenAIClient
+	if useRealAI {
+		// Initialize OpenAI client with configuration
+		openaiConfig := OpenAIConfig{
+			APIKey:  getAPIKey(cfg),
+			Model:   cfg.AI.Model,
+			BaseURL: cfg.AI.BaseURL,
+		}
+		openaiClient = NewOpenAIClient(openaiConfig)
+	}
+
+	return &Service{
+		openaiClient: openaiClient,
+		config:       cfg,
+		useRealAI:    useRealAI,
+	}
+}
+
+// shouldUseRealAI determines if real AI should be used based on configuration
+func shouldUseRealAI(cfg *config.Config) bool {
+	// Don't use real AI in mock mode
+	if os.Getenv("CROSSPLANE_AI_MODE") == "mock" {
+		return false
+	}
+
+	// Check if provider is set to openai and we have an API key
+	if cfg.AI.Provider == "openai" {
+		apiKey := getAPIKey(cfg)
+		return apiKey != ""
+	}
+
+	return false
+}
+
+// getAPIKey gets the API key from config or environment variable
+func getAPIKey(cfg *config.Config) string {
+	// First try the config
+	if cfg.AI.APIKey != "" {
+		// Handle environment variable expansion
+		if strings.HasPrefix(cfg.AI.APIKey, "${") && strings.HasSuffix(cfg.AI.APIKey, "}") {
+			envVar := strings.TrimSuffix(strings.TrimPrefix(cfg.AI.APIKey, "${"), "}")
+			return os.Getenv(envVar)
+		}
+		return cfg.AI.APIKey
+	}
+
+	// Fallback to environment variable
+	return os.Getenv("OPENAI_API_KEY")
+}
+
+// IsUsingRealAI returns true if the service is configured to use real AI
+func (s *Service) IsUsingRealAI() bool {
+	return s.useRealAI
 }
 
 // ProcessQuery processes a natural language query about Crossplane resources
@@ -73,14 +167,42 @@ func (s *Service) ProcessQuery(ctx context.Context, query string, resources inte
 		return "", fmt.Errorf("failed to marshal resources: %w", err)
 	}
 
-	// Simulate AI processing (in a real implementation, this would call an AI API)
+	// Use real AI if available, otherwise simulate
+	if s.useRealAI && s.openaiClient != nil {
+		return s.openaiClient.CompleteWithContext(ctx, query, string(resourcesJSON))
+	}
+
+	// Fallback to simulated AI processing
 	response := s.simulateAIResponse(query, string(resourcesJSON))
 	return response, nil
 }
 
 // GenerateSuggestions generates AI-powered suggestions
 func (s *Service) GenerateSuggestions(ctx context.Context, suggestionType string, resources interface{}) ([]*Suggestion, error) {
-	// Simulate AI-generated suggestions based on the type and current resources
+	// Use real AI if available
+	if s.useRealAI && s.openaiClient != nil {
+		// Convert resources to JSON for context
+		resourcesJSON, err := json.Marshal(resources)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal resources: %w", err)
+		}
+
+		// Get AI-generated suggestions
+		suggestions, err := s.openaiClient.GenerateSuggestions(ctx, suggestionType, string(resourcesJSON))
+		if err != nil {
+			// Fallback to mock suggestions if AI fails
+			return s.generateMockSuggestions(suggestionType), nil
+		}
+
+		// Convert from []Suggestion to []*Suggestion
+		result := make([]*Suggestion, len(suggestions))
+		for i, suggestion := range suggestions {
+			result[i] = &suggestion
+		}
+		return result, nil
+	}
+
+	// Fallback to simulated AI-generated suggestions
 	suggestions := s.generateMockSuggestions(suggestionType)
 	return suggestions, nil
 }
@@ -140,7 +262,26 @@ func (s *Service) AnalyzeResources(ctx context.Context, resources interface{}, h
 		}, nil
 	}
 
-	// Perform real analysis on actual resources
+	// Use real AI for analysis if available
+	if s.useRealAI && s.openaiClient != nil {
+		// Convert resources to JSON for AI analysis
+		resourcesJSON, err := json.Marshal(resourceList)
+		if err != nil {
+			// Fallback to real analysis if marshaling fails
+			return s.performRealAnalysis(resourceList, healthCheck), nil
+		}
+
+		// Get AI-powered analysis
+		analysis, err := s.openaiClient.AnalyzeResources(ctx, string(resourcesJSON), healthCheck)
+		if err != nil {
+			// Fallback to real analysis if AI fails
+			return s.performRealAnalysis(resourceList, healthCheck), nil
+		}
+
+		return analysis, nil
+	}
+
+	// Fallback to perform real analysis on actual resources
 	return s.performRealAnalysis(resourceList, healthCheck), nil
 }
 
@@ -373,4 +514,155 @@ func (s *Service) generateMockSuggestions(suggestionType string) []*Suggestion {
 			},
 		}
 	}
+}
+
+// GenerateManifest generates a Crossplane manifest from natural language description
+func (s *Service) GenerateManifest(ctx context.Context, description, provider string) (string, error) {
+	// Use real AI if available
+	if s.useRealAI && s.openaiClient != nil {
+		prompt := fmt.Sprintf(`Generate a Crossplane manifest for: %s
+
+Requirements:
+- Use provider: %s (if specified, otherwise choose appropriate provider)
+- Create valid Crossplane YAML
+- Include metadata, spec, and appropriate labels
+- Follow Crossplane best practices
+- Include helpful comments
+
+Please provide only the YAML manifest without additional explanations.`, description, provider)
+
+		return s.openaiClient.Complete(ctx, prompt)
+	}
+
+	// Fallback to template-based generation
+	return s.generateTemplateManifest(description, provider), nil
+}
+
+// generateTemplateManifest generates a basic template manifest (fallback)
+func (s *Service) generateTemplateManifest(description, provider string) string {
+	// Simple template generation based on keywords in description
+	descLower := strings.ToLower(description)
+
+	if strings.Contains(descLower, "database") || strings.Contains(descLower, "postgres") || strings.Contains(descLower, "mysql") {
+		return s.generateDatabaseTemplate(provider)
+	} else if strings.Contains(descLower, "storage") || strings.Contains(descLower, "bucket") {
+		return s.generateStorageTemplate(provider)
+	} else if strings.Contains(descLower, "compute") || strings.Contains(descLower, "instance") {
+		return s.generateComputeTemplate(provider)
+	}
+
+	// Default to a composition template
+	return s.generateCompositionTemplate(provider)
+}
+
+func (s *Service) generateDatabaseTemplate(provider string) string {
+	if provider == "" || provider == "auto" {
+		provider = "aws"
+	}
+
+	return fmt.Sprintf(`# Database instance generated by Crossplane AI
+apiVersion: rds.%s.crossplane.io/v1alpha1
+kind: DBInstance
+metadata:
+  name: my-database
+  namespace: default
+  labels:
+    generated-by: crossplane-ai
+spec:
+  forProvider:
+    region: us-east-1
+    dbInstanceClass: db.t3.micro
+    engine: postgres
+    engineVersion: "13.7"
+    allocatedStorage: 20
+    dbName: myapp
+    masterUsername: admin
+    autoMinorVersionUpgrade: true
+    backupRetentionPeriod: 7
+    storageEncrypted: true
+  providerConfigRef:
+    name: default
+  writeConnectionSecretsToRef:
+    name: my-database-connection
+    namespace: default`, provider)
+}
+
+func (s *Service) generateStorageTemplate(provider string) string {
+	if provider == "" || provider == "auto" {
+		provider = "aws"
+	}
+
+	return fmt.Sprintf(`# Storage bucket generated by Crossplane AI
+apiVersion: s3.%s.crossplane.io/v1beta1
+kind: Bucket
+metadata:
+  name: my-storage-bucket
+  namespace: default
+  labels:
+    generated-by: crossplane-ai
+spec:
+  forProvider:
+    region: us-east-1
+    versioning:
+      status: Enabled
+    serverSideEncryptionConfiguration:
+      rules:
+      - applyServerSideEncryptionByDefault:
+          sseAlgorithm: AES256
+  providerConfigRef:
+    name: default`, provider)
+}
+
+func (s *Service) generateComputeTemplate(provider string) string {
+	if provider == "" || provider == "auto" {
+		provider = "aws"
+	}
+
+	return fmt.Sprintf(`# Compute instance generated by Crossplane AI
+apiVersion: ec2.%s.crossplane.io/v1alpha1
+kind: Instance
+metadata:
+  name: my-instance
+  namespace: default
+  labels:
+    generated-by: crossplane-ai
+spec:
+  forProvider:
+    region: us-east-1
+    instanceType: t3.micro
+    imageId: ami-0abcdef1234567890
+    keyName: my-key-pair
+    tags:
+      Name: MyInstance
+      GeneratedBy: crossplane-ai
+  providerConfigRef:
+    name: default`, provider)
+}
+
+func (s *Service) generateCompositionTemplate(provider string) string {
+	return fmt.Sprintf(`# Crossplane Composition generated by Crossplane AI
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: my-composition
+  namespace: default
+  labels:
+    generated-by: crossplane-ai
+    provider: %s
+spec:
+  compositeTypeRef:
+    apiVersion: example.com/v1alpha1
+    kind: XResource
+  resources:
+  - name: resource
+    base:
+      apiVersion: example.com/v1alpha1
+      kind: Resource
+      spec:
+        forProvider:
+          region: us-east-1
+    patches:
+    - type: FromCompositeFieldPath
+      fromFieldPath: spec.region
+      toFieldPath: spec.forProvider.region`, provider)
 }
